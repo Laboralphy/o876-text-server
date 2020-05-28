@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const httpServer = express();
 
 const WSService = require('../libs/wsservice');
 const logger = require('../libs/logger');
@@ -12,6 +11,7 @@ const ROOT_PATH = path.resolve(__dirname, '..');
 const PUBLIC_PATH = path.join(ROOT_PATH, 'public');
 const DIST_PATH = path.join(ROOT_PATH, 'dist');
 
+logger.log('creating server instance');
 const wss = new WSService();
 
 /**
@@ -19,26 +19,26 @@ const wss = new WSService();
  * provides access to all packed scripts inside the DIST folder
  */
 function initRoutes() {
-    httpServer.use('/dist', express.static(path.join(DIST_PATH)));
-    httpServer.use('/styles', express.static(path.join(PUBLIC_PATH, 'styles')));
-    httpServer.use('/webfonts', express.static(path.join(PUBLIC_PATH, 'webfonts')));
-    httpServer.get('/', (req, res) => {
-        res.redirect(301, '/index.html');
+    logger.log('defining routes');
+    /*
+    wss.express.use('/dist', express.static(path.join(DIST_PATH)));
+    wss.express.use('/styles', express.static(path.join(PUBLIC_PATH, 'styles')));
+    wss.express.use('/webfonts', express.static(path.join(PUBLIC_PATH, 'webfonts')));
+    wss.express.get('/', (req, res) => {
+        res.redirect('/index.htmlx', 301);
     });
-    httpServer.get('/index.html', (req, res) => {
+    wss.express.get('/index.html', (req, res) => {
         res.sendFile(path.join(PUBLIC_PATH, 'index.html'));
-    });
+    });*/
+    wss.express.use('/dist', express.static(path.join(DIST_PATH)));
+    wss.express.use('/public', express.static(PUBLIC_PATH));
 }
 
 function runService() {
     initRoutes();
-    wss.attach(httpServer);
-    wss.runService([
-        new ServiceLogin(),
-        new ServiceChat(),
-    ]);
-    httpServer.listen(8080);
-    logger.log('listening on port 8080');
+    wss.service(new ServiceLogin());
+    wss.service(new ServiceChat());
+    return wss.listen(8080);
 }
 
-runService();
+runService().then(() => logger.log('listening on port 8080'));

@@ -49,9 +49,13 @@ class User {
         this._sName = value;
     }
 
-    idName() {
-        return {id: this.id, name: this.name};
+    export() {
+        return {
+            id: this._id,
+            name: this._sName
+        };
     }
+
 
     /**
      * Affiche une ligne de description pour les logs

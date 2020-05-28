@@ -37,7 +37,7 @@ class Abstract {
      * @protected
      */
     _socket(idClient) {
-        return this.clientManager().client(idClient).socket;
+        return this._clientManager.client(idClient).socket;
     }
 
 	/**

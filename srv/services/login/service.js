@@ -14,7 +14,6 @@ class ServiceLogin extends ServiceAbstract {
      */
     connectClient(client) {
         super.connectClient(client);
-        console.log('UN CLIENT')
         let socket = client.socket;
 
         /**
@@ -32,7 +31,6 @@ class ServiceLogin extends ServiceAbstract {
             if (client.status !== STATUS.UNIDENTIFIED) {
                 throw new Error('Invalid login request : client "' + client.id + '" (name "' + client.name + '") is already identified !');
             }
-            console.log('XXXX');
             if (name.length > 2) {
                 client.name = name;
                 client.id = socket.client.id;

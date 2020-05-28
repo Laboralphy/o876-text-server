@@ -25,7 +25,7 @@ class Service extends ServiceAbstract {
         c = new TinyTxat.Channel();
         c.id = 2;
         c.name = 'public';
-        c.type = 'public';
+        c.type = 'permanent';
         this.txat.addChannel(c);
 
 
@@ -39,7 +39,9 @@ class Service extends ServiceAbstract {
     }
 
     disconnectClient(client) {
-        this.txat.dropUser(this.txat.getUser(client.id));
+        if (this.txat.isUserExist(client.id)) {
+            this.txat.dropUser(this.txat.getUser(client.id));
+        }
     }
 
     /**
@@ -56,25 +58,18 @@ class Service extends ServiceAbstract {
          * @param id {string} identifiant du canal
          * @param ack {function}
          */
-        socket.on(PROTO.REQ_MS_CHAN_INFO, ({cid}, ack) => {
-            if (client.id) {
-                let oChannel = this.txat.getChannel(cid);
+        socket.on(PROTO.REQ_MS_CHAN_INFO, ({channel}, ack) => {
+            try {
+                let oChannel = this.txat.getChannel(channel);
                 let oTxatUser = this.txat.getUser(client.id);
                 if (oChannel && oChannel.userPresent(oTxatUser)) {
-                    ack({
-                        cid: oChannel.id(),
-                        name: oChannel.name(),
-                        type: oChannel.type(),
-                        users: oChannel.users().map(u => ({
-                            id: u.id,
-                            name: u.name
-                        }))
-                    })
+                    ack(oChannel.export())
                 } else {
                     ack(null);
                 }
-            } else {
-                socket.close();
+            } catch (e) {
+                console.error(e);
+                socket.disconnect();
             }
         });
 
@@ -86,19 +81,16 @@ class Service extends ServiceAbstract {
          * @param ack {function}
          */
         socket.on(PROTO.REQ_MS_FIND_CHAN, ({search}, ack) => {
-            if (client.id) {
+            try {
                 let oChannel = this.txat.searchChannel(search);
                 if (oChannel) {
-                    ack({
-                        cid: oChannel.id(),
-                        name: oChannel.name(),
-                        type: oChannel.type()
-                    });
+                    ack(oChannel.export());
                 } else {
                     ack(null);
                 }
-            } else {
-                socket.close();
+            } catch (e) {
+                console.error(e);
+                socket.disconnect();
             }
         });
 
@@ -111,19 +103,20 @@ class Service extends ServiceAbstract {
          * @param id {string} identifiant du user
          * @param ack
          */
-        socket.on(PROTO.REQ_MS_USER_INFO, ({uid}, ack) => {
-            if (client.id) {
-                let oTxatUser = this.txat.getUser(uid);
+        socket.on(PROTO.REQ_MS_USER_INFO, ({user}, ack) => {
+            try {
+                let oTxatUser = this.txat.getUser(user);
                 if (oTxatUser) {
                     ack({
-                        uid: oTxatUser.id(),
-                        name: oTxatUser.name()
+                        id: oTxatUser.id,
+                        name: oTxatUser.name
                     })
                 } else {
                     ack(null);
                 }
-            } else {
-                socket.close();
+            } catch (e) {
+                console.error(e);
+                socket.disconnect();
             }
         });
 
@@ -136,22 +129,20 @@ class Service extends ServiceAbstract {
          * @param ack {function}
          */
         socket.on(PROTO.REQ_MS_JOIN_CHAN, ({name}, ack) => {
-            if (client.id) {
+            try {
                 let oChannel = this.txat.searchChannel(name);
                 if (!oChannel) {
                     oChannel = new TinyTxat.Channel();
-                    oChannel.name(name);
+                    oChannel.name = name;
                     this.txat.addChannel(oChannel);
                 }
                 let oTxatUser = this.txat.getUser(client.id);
                 oChannel.addUser(oTxatUser);
-                logger.logfmt('user %s joined channel %s', oTxatUser.name(), oChannel.name());
-                ack({
-                    cid: oChannel.id,
-                    name: oChannel.name
-                });
-            } else {
-                socket.close();
+                logger.logfmt('user %s joined channel %s', oTxatUser.name, oChannel.name);
+                ack(oChannel.export());
+            } catch (e) {
+                console.error(e);
+                socket.disconnect();
             }
         });
 
@@ -162,91 +153,93 @@ class Service extends ServiceAbstract {
          * @param id {string} identifiant du canal
          * @param message {string} contenu du message
          */
-        socket.on(PROTO.MS_SAY, ({cid, message}) => {
-            if (client.id) {
+        socket.on(PROTO.MS_SAY, ({channel, message}) => {
+            try {
                 let oUser = this.txat.getUser(client.id);
-                let oChannel = this.txat.getChannel(cid);
+                let oChannel = this.txat.getChannel(channel);
                 if (!oChannel) {
-                    logger.errfmt('invalid channel : %s', cid);
+                    logger.errfmt('invalid channel : %s', channel);
                 } else if (oChannel.userPresent(oUser)) {
                     logger.logfmt('[%s] %s (%s) : %s',
-                        cid,
+                        channel,
                         client.name,
                         client.id,
                         message
                     );
                     oChannel.transmitMessage(oUser, message);
                 } else {
-                    logger.errfmt('user %s tried to say something on a channel (%s) he/she\'s not connected to.', client.id, cid);
+                    logger.errfmt('user %s tried to say something on a channel (%s) he/she\'s not connected to.', client.id, channel);
                 }
-            } else {
-                socket.close();
+            } catch (e) {
+                console.error(e);
+                socket.disconnect();
             }
         });
 
         /**
          * Le client veut quitter un canal auquel il est connecté
          */
-        socket.on(PROTO.MS_LEAVE_CHAN, ({cid}) => {
-            if (client.id) {
-                const oChan = this.txat.getChannel(cid);
-                if (oChan) {
-                    oChan.dropUser(client.id);
-                }
-            } else {
-                socket.close();
+        socket.on(PROTO.MS_LEAVE_CHAN, ({channel}) => {
+            try {
+                const oChan = this.txat.getChannel(channel);
+                const oUser = this.txat.getUser(client.id);
+                logger.logfmt('user %s leaves channel %s', oUser.name, oChan.name);
+                oChan.dropUser(oUser);
+            } catch (e) {
+                console.error(e);
+                socket.disconnect();
             }
         });
     }
 
     /**
      * Avertir un client qu'il rejoin sur un canal
-     * @param uid {string} identifiant du client à prévenir
-     * @param cid {string} information du canal concerné {id, name, type}
+     * @param client {string} identifiant du client à prévenir
+     * @param channel {string} information du canal concerné {id, name, type}
      */
-    send_ms_you_join(uid, cid) {
-        let oChannel = this.txat.getChannel(cid);
-        this._emit(uid, PROTO.MS_YOU_JOIN, {
-            cid: oChannel.id(),
-            name: oChannel.name(),
-            type: oChannel.type()
-        });
+    send_ms_you_join(client, channel) {
+        let oChannel = this.txat.getChannel(channel);
+        this._emit(client, PROTO.MS_YOU_JOIN, oChannel.export());
     }
 
     /**
      * avertir un client de l'arrivée d'un utilisateur sur un canal
-     * @param uid {string} identifiant du client à prévenir
-     * @param auid {string} identifiant du client arrivant
-     * @param cid {string} identifiant du canal concerné
+     * @param client {string} identifiant du client à prévenir
+     * @param user {string} identifiant du client arrivant
+     * @param channel {string} identifiant du canal concerné
      */
-    send_ms_user_joins(uid, auid, cid) {
-        let oChannel = this.txat.getChannel(cid);
-        let oArriving = this.txat.getUser(auid);
-        if (oChannel.userPresent(oClient)) {
+    send_ms_user_joins(client, user, channel) {
+        let oChannel = this.txat.getChannel(channel);
+        let oArriving = this.txat.getUser(user);
+        if (oChannel.userPresent(oArriving)) {
             // le client appartient au canal
-            this._emit(uid, PROTO.MS_USER_JOINS, {uid: oArriving.id, cid: oChannel.id});
+            this._emit(client, PROTO.MS_USER_JOINS, {user: oArriving.id, channel: oChannel.id});
         }
     }
 
     /**
      * Avertir un client du départ d'un autre client d'un canal
      * @param client {string} identifiant du client à prévenir
-     * @param uid {string} identifiant du client partant
-     * @param cid {string} identifiant du canal concerné
+     * @param user {string} identifiant du client partant
+     * @param channel {string} identifiant du canal concerné
      */
-    send_ms_user_leaves(client, uid, cid) {
-        this._emit(client, PROTO.MS_USER_LEAVES, {uid, cid});
+    send_ms_user_leaves(client, user, channel) {
+        if (client === user) {
+            this._emit(client, PROTO.MS_YOU_LEAVE, {channel});
+        } else {
+            this._emit(client, PROTO.MS_USER_LEAVES, {user, channel});
+        }
     }
 
     /**
      * Transmettre le message d'un client à un autre
      * @param client {string} identifiant du client destinataire
-     * @param uid {string} identifiant du client expéditeur
-     * @param cid {string} identifiant du canal concerné / null si c'est un message privé
+     * @param user {string} identifiant du client expéditeur
+     * @param channel {string} identifiant du canal concerné / null si c'est un message privé
      * @param message {string} contenu du message
      */
-    send_ms_user_says(client, uid, cid, message) {
-        this._emit(client, PROTO.MS_USER_SAYS, {uid, cid, message});
+    send_ms_user_says(client, user, channel, message) {
+        this._emit(client, PROTO.MS_USER_SAYS, {user, channel, message});
     }
 }
 

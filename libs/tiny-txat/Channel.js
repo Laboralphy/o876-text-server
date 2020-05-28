@@ -16,6 +16,14 @@ class Channel {
 		return this;
 	}
 
+	export() {
+        return {
+            id: this._id,
+            name: this._sName,
+            type: this._sType
+        };
+    }
+
     /**
      * renvoie identifiant du canal
      * @returns {number}
@@ -112,7 +120,7 @@ class Channel {
             this._events.emit('user-dropped', {channel: this, user: u});
 			this._users.splice(i, 1);
         } else {
-            throw new Error('cannot remove user ' + u.display() + ' from channel ' + this.display() + ' : user not registered in the channel');
+            throw new Error('cannot remove user ' + u.id + ' from channel ' + this.id + ' : user not registered in the channel');
         }
     }
 

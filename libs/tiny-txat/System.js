@@ -24,7 +24,7 @@ class System {
 
     _eventUserJoins(event) {
         // transmettre l'évènement à tous les utilisateurs du canal
-        event.channel.users().forEach(u => {
+        event.channel.users.forEach(u => {
 			this._events.emit('user-joins', {
 				to: u.id,
 				user: event.user.id,
@@ -34,10 +34,10 @@ class System {
     }
 
     _eventUserLeaves(event) {
-		event.channel.users().forEach(u =>
+		event.channel.users.forEach(u =>
 			this._events.emit('user-leaves', {
 				to: u.id,
-				user: event.user.idName(), // le user est sur le point de disparaitre
+				user: event.user.id, // le user est sur le point de disparaitre
 				channel: event.channel.id
 			})
 		);
@@ -84,7 +84,15 @@ class System {
     }
 
     getUser(id) {
-        return this._users.find(u => u.id === id);
+        const oUser = this._users.find(u => u.id === id);
+        if (!oUser) {
+            throw new Error('user ' + id + ' does not exists');
+        }
+        return oUser;
+    }
+
+    isUserExist(id) {
+        return !!this._users.find(u => u.id === id);
     }
 
     addChannel(c) {
@@ -94,7 +102,7 @@ class System {
 		if (!c.name) {
 			throw new Error('cannot register channel : it has no valid name');
 		}
-		if (this.getChannel(c.id)) {
+		if (this.isChannelExist(c.id)) {
 			throw new Error('cannot register channel : id "' + c.id + '" is already in use');
 		}
 		if (this.searchChannel(c.name)) {
@@ -109,7 +117,15 @@ class System {
     }
 
     getChannel(id) {
-	    return this._channels.find(c => c.id === id);
+	    const oChannel = this._channels.find(c => c.id === id);
+        if (!oChannel) {
+            throw new Error('channel ' + id + ' does not exist');
+        }
+	    return oChannel;
+    }
+
+    isChannelExist(id) {
+        return !!this._channels.find(c => c.id === id);
     }
 
     searchChannel(sName) {
@@ -123,7 +139,7 @@ class System {
             this._channels.splice(i, 1);
             this._events.emit('channel-dropped', {channel: c});
         } else {
-            throw new Error('cannot register channel ' + c.display() + ' : already registered');
+            throw new Error('cannot drop channel ' + c.display() + ' : not registered');
         }
     }
 }

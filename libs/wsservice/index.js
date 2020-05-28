@@ -1,4 +1,5 @@
 const http = require('http');
+const express = require('express');
 const socket_io = require('socket.io');
 
 const ServiceManager = require('./service-manager');
@@ -7,30 +8,32 @@ class MPService {
 
 	constructor() {
 		this._serviceManager = new ServiceManager();
-		this._serviceRun = false;
+		this._expressInstance = express();
+		this._httpServer = http.createServer(this._expressInstance);
 	}
 
 	get serviceManager() {
 		return this._serviceManager;
 	}
 
-	attach(httpServer) {
-		this.http = http.Server(httpServer);
-		this.io = socket_io(http);
+	service(oService) {
+		this._serviceManager.plugin(oService);
 	}
 
-	runService(aServices) {
-		if (this._serviceRun) {
-			throw new Error('service may be run only once');
-		}
-		for (let oService of aServices) {
-			this._serviceManager.plugin(oService);
-		}
-        this.io.on('connection', socket => {
-        	console.log('connection dun client')
-        	this._serviceManager.run(socket)
-		});
-		this._serviceRun = true;
+	get express() {
+		return this._expressInstance;
+	}
+
+	listen(nPort) {
+		return new Promise(resolve => {
+			this._io = socket_io(this._httpServer);
+			this._io.on('connection', socket => {
+				this._serviceManager.run(socket);
+			});
+			this._httpServer.listen(nPort, () => {
+				resolve();
+			});
+		})
 	}
 }
 

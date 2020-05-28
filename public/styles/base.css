@@ -9,7 +9,7 @@ body, input.command {
     background-color: black;
     color: #0F0;
     font-family: "CernTerminal", monospace;
-    font-size: 32px;
+    font-size: 28px;
     font-weight: bold;
     text-shadow: 0 0 10px;
     word-wrap: break-word;

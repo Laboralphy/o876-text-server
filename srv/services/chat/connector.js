@@ -12,59 +12,63 @@ class Connector {
         /**
          * Serveur : "vous venez de rejoindre un canal"
          */
-        socket.on(PROTO.MS_YOU_JOIN, async ({cid}) => {
-            let oChannel = await this.req_chan_info(cid);
+        socket.on(PROTO.MS_YOU_JOIN, async ({id, name}) => {
+            let oChannel = await this.req_chan_info(id);
             if (oChannel) {
-                this._events.emit('newchan', oChannel);
+                this._events.emit('you.joined', {channel: oChannel});
                 if (this._chanRegistry.indexOf(oChannel) < 0) {
                     this._chanRegistry.push(oChannel);
                 }
             }
         });
 
-        socket.on(PROTO.MS_YOU_LEAVE, async ({cid}) => {
+        socket.on(PROTO.MS_YOU_LEAVE, async ({channel}) => {
             // remove the channel from registry
-            let iChannel = this
+            console.log('leaving channel', channel);
+            let oChannel = this
                 ._chanRegistry
-                .findIndex(c => c.id === cid);
-            if (iChannel >= 0) {
-                this._chanRegistry.splice(iChannel, 1);
+                .find(c => c.id === channel);
+            if (!!oChannel) {
+                this._events.emit('you.left', {channel: oChannel});
+                this._chanRegistry.splice(this._chanRegistry.indexOf(oChannel), 1);
+            } else {
+                console.error('cannot find channel', channel);
             }
         });
 
         /**
          * Serveur : "un utilisateur a rejoin l'un des canaux auxquels vous êtes connecté"
          */
-        socket.on(PROTO.MS_USER_JOINS, async ({uid, cid}) => {
-            let oUser = await this.req_user_info(uid);
-            let oChannel = await this.req_chan_info(cid);
-            this._events.emit('postline', {
-                cid: oChannel.id,
-                message: '[' + oChannel.name + ']: +' + oUser.name
+        socket.on(PROTO.MS_USER_JOINS, async ({user, channel}) => {
+            let oUser = await this.req_user_info(user);
+            let oChannel = await this.req_chan_info(channel);
+            this._events.emit('user.joined', {
+                channel: oChannel,
+                user: oUser,
             });
         });
 
         /**
          * Serveur : "un utilisateur a quitté l'un des canaux auxquels vous êtes connecté"
          */
-        socket.on(PROTO.MS_USER_LEAVES, async ({uid, cid}) => {
-            let oUser = await this.req_user_info(uid);
-            let oChannel = await this.req_chan_info(cid);
-            this._events.emit('postline', {
-                cid: oChannel.id,
-                message: '[' + oChannel.name + ']: -' + oUser.name
+        socket.on(PROTO.MS_USER_LEAVES, async ({user, channel}) => {
+            let oUser = await this.req_user_info(user);
+            let oChannel = await this.req_chan_info(channel);
+            this._events.emit('user.left', {
+                channel: oChannel,
+                user: oUser
             });
         });
 
         /**
          * Serveur : "un utilisateur a envoyé un message de discussion sur un canal"
          */
-        socket.on(PROTO.MS_USER_SAYS, async ({uid, cid, message}) => {
-            let oUser = await this.req_user_info(uid);
-            let oChannel = await this.req_chan_info(cid);
-            this._events.emit('postline', {
-                cid: oChannel.id,
-                user: {id: oUser.id, name: oUser.name},
+        socket.on(PROTO.MS_USER_SAYS, async ({user, channel, message}) => {
+            let oUser = await this.req_user_info(user);
+            let oChannel = await this.req_chan_info(channel);
+            this._events.emit('message', {
+                channel: oChannel,
+                user: oUser,
                 message
             });
         });
@@ -98,13 +102,13 @@ class Connector {
                 } else {
                     this._socket.emit(
                         PROTO.REQ_MS_CHAN_INFO,
-                        {cid},
-                        data => {
-                            if (data) {
+                        {channel: cid},
+                        oChannel => {
+                            if (oChannel) {
                                 // il n'y a pas de registre de canaux dans le state
-                                this._chanCache[cid] = data;
+                                this._chanCache[cid] = oChannel;
                             }
-                            resolve(data);
+                            resolve(oChannel);
                         }
                     );
                 }
@@ -126,7 +130,7 @@ class Connector {
                 } else {
                     this._socket.emit(
                         PROTO.REQ_MS_USER_INFO,
-                        {uid},
+                        {user: uid},
                         data => {
                             if (data) {
                                 this._userCache[uid] = data;
@@ -146,19 +150,19 @@ class Connector {
      * @param message {string} contenu du message
      */
     send_say(cid, message) {
-        this._socket.emit(PROTO.MS_SAY, {cid, message});
+        this._socket.emit(PROTO.MS_SAY, {channel: cid, message});
     }
 
     send_leave_chan(cid) {
-        this._socket.emit(PROTO.MS_LEAVE_CHAN, {cid});
+        this._socket.emit(PROTO.MS_LEAVE_CHAN, {channel: cid});
     }
 
     req_join_chan(name) {
         return new Promise(resolve => {
             this._socket.emit(PROTO.REQ_MS_JOIN_CHAN,
                 {name},
-                ({cid, name}) => {
-                    resolve({cid, name});
+                oChannel => {
+                    resolve(oChannel);
                 });
         });
     }
