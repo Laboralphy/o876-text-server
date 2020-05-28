@@ -1,4 +1,5 @@
 const Events = require('events');
+const logger = require('../logger');
 
 
 class System {
@@ -24,6 +25,7 @@ class System {
 
     _eventUserJoins(event) {
         // transmettre l'évènement à tous les utilisateurs du canal
+        logger.logfmt('user %s joins channel %s', event.user.name, event.channel.name);
         event.channel.users.forEach(u => {
 			this._events.emit('user-joins', {
 				to: u.id,
@@ -34,6 +36,7 @@ class System {
     }
 
     _eventUserLeaves(event) {
+        logger.logfmt('user %s leaves channel %s', event.user.name, event.channel.name);
 		event.channel.users.forEach(u =>
 			this._events.emit('user-leaves', {
 				to: u.id,
@@ -41,6 +44,14 @@ class System {
 				channel: event.channel.id
 			})
 		);
+    }
+
+    _eventChannelEmpty({channel}) {
+        logger.logfmt('channel %s is empty', channel.name);
+        this.dropChannel(channel);
+        let i = this._channels.indexOf(channel);
+        this._channels.splice(i, 1);
+        this._events.emit('channel-dropped', {channel});
     }
 
     _eventUserGotMessage(event) {
@@ -112,8 +123,10 @@ class System {
 			throw new Error('cannot register channel ' + c.display() + ' : already registered');
 		}
 		this._channels.push(c);
+        logger.logfmt('channel %s created', c.name);
 		c.on('user-added', event => this._eventUserJoins(event));
-		c.on('user-dropped', event => this._eventUserLeaves(event))
+        c.on('user-dropped', event => this._eventUserLeaves(event))
+        c.on('empty', event => this._eventChannelEmpty(event))
     }
 
     getChannel(id) {
@@ -135,9 +148,7 @@ class System {
     dropChannel(c) {
         if (this.channelPresent(c)) {
             c.purge();
-            let i = this._channels.indexOf(c);
-            this._channels.splice(i, 1);
-            this._events.emit('channel-dropped', {channel: c});
+            logger.logfmt('channel %s destroyed', c.name);
         } else {
             throw new Error('cannot drop channel ' + c.display() + ' : not registered');
         }

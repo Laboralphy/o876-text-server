@@ -1,1 +1,5 @@
 export const WRITE_LINE = 'WRITE_LINE';
+export const SELECT_SCREEN = 'SELECT_SCREEN';
+export const CLEAR_SCREEN = 'CLEAR_SCREEN';
+export const CREATE_SCREEN = 'CREATE_SCREEN';
+export const DESTROY_SCREEN = 'DESTROY_SCREEN';

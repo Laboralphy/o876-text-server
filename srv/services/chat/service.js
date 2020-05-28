@@ -134,11 +134,11 @@ class Service extends ServiceAbstract {
                 if (!oChannel) {
                     oChannel = new TinyTxat.Channel();
                     oChannel.name = name;
+                    oChannel.type = 'public';
                     this.txat.addChannel(oChannel);
                 }
                 let oTxatUser = this.txat.getUser(client.id);
                 oChannel.addUser(oTxatUser);
-                logger.logfmt('user %s joined channel %s', oTxatUser.name, oChannel.name);
                 ack(oChannel.export());
             } catch (e) {
                 console.error(e);
@@ -157,9 +157,7 @@ class Service extends ServiceAbstract {
             try {
                 let oUser = this.txat.getUser(client.id);
                 let oChannel = this.txat.getChannel(channel);
-                if (!oChannel) {
-                    logger.errfmt('invalid channel : %s', channel);
-                } else if (oChannel.userPresent(oUser)) {
+                if (oChannel.userPresent(oUser)) {
                     logger.logfmt('[%s] %s (%s) : %s',
                         channel,
                         client.name,
@@ -183,7 +181,6 @@ class Service extends ServiceAbstract {
             try {
                 const oChan = this.txat.getChannel(channel);
                 const oUser = this.txat.getUser(client.id);
-                logger.logfmt('user %s leaves channel %s', oUser.name, oChan.name);
                 oChan.dropUser(oUser);
             } catch (e) {
                 console.error(e);

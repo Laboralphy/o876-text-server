@@ -119,6 +119,9 @@ class Channel {
             let i = this._users.indexOf(u);
             this._events.emit('user-dropped', {channel: this, user: u});
 			this._users.splice(i, 1);
+			if (this._sType === 'public' && this._users.length === 0) {
+                this._events.emit('empty', {channel: this});
+            }
         } else {
             throw new Error('cannot remove user ' + u.id + ' from channel ' + this.id + ' : user not registered in the channel');
         }
