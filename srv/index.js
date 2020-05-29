@@ -4,9 +4,9 @@ const path = require('path');
 const WSService = require('../libs/wsservice');
 const logger = require('../libs/logger');
 
-// const ServiceLogin = require('./services/login/service');
-// const ServiceChat = require('./services/chat/service');
-const ServiceCommand = require('./services/command/service');
+const ServiceLogin = require('./services/login/service');
+const ServiceChat = require('./services/chat/service');
+// const ServiceCommand = require('./services/command/service');
 
 const ROOT_PATH = path.resolve(__dirname, '..');
 const PUBLIC_PATH = path.join(ROOT_PATH, 'public');
@@ -27,9 +27,9 @@ function initRoutes() {
 
 function runService() {
     initRoutes();
-    // wss.service(new ServiceLogin());
-    // wss.service(new ServiceChat());
-    wss.service(new ServiceCommand());
+    wss.service(new ServiceLogin());
+    wss.service(new ServiceChat());
+    // wss.service(new ServiceCommand());
     return wss.listen(8080);
 }
 

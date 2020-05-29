@@ -16,6 +16,7 @@ class Client {
 		this.name = '';
 		this.socket = null;
 		this.status = 0;
+		this.connectionAttempts = 3;
 	}
 
 	/**

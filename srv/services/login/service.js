@@ -6,6 +6,7 @@ const PROTO = require('./protocol');
 class ServiceLogin extends ServiceAbstract {
     constructor() {
         super();
+        this._connectedUser = new Set();
     }
 
     /**
@@ -27,20 +28,35 @@ class ServiceLogin extends ServiceAbstract {
          * @param ack {Function}
          */
         socket.on(PROTO.REQ_LOGIN, ({name, pass}, ack) => {
-            // si le client est déja identifié...
-            if (client.status !== STATUS.UNIDENTIFIED) {
-                throw new Error('Invalid login request : client "' + client.id + '" (name "' + client.name + '") is already identified !');
+            // clinet déja en cours d'indentification -> dehors
+            if (client.status === STATUS.CONNECTING) {
+                socket.disconnect();
             }
-            if (name.length > 2) {
-                client.name = name;
-                client.id = socket.client.id;
+            logger.logfmt('Incoming new user %s', name);
+            // si le client est déja identifié...
+            if (client.status === STATUS.IDENTIFIED) {
+                ack({id: client.id});
+                return;
+            }
+            client.status = STATUS.CONNECTING;
+            client.name = name;
+            client.id = socket.client.id;
+            if (name !== pass) {
+                logger.logfmt(name , pass, name !== pass);
+                logger.logfmt('user %s (%s) access denied. %d attempt(s) left.', client.id, client.name, --client.connectionAttempts);
+                if (client.connectionAttempts <= 0) {
+                    ack({id: null});
+                    socket.disconnect();
+                } else {
+                    logger.logfmt('wrong user/pass');
+                    client.status = STATUS.UNIDENTIFIED;
+                    ack({id: null});
+                }
+            } else {
                 logger.logfmt('user %s (%s) access granted', client.id, client.name);
                 this._broadcast('client-login', {client});
+                client.status = STATUS.IDENTIFIED;
                 ack({id: client.id});
-            } else {
-                logger.logfmt('user %s (%s) access denied', client.id, client.name);
-                client.id = null;
-                ack({id: null});
             }
         });
     }

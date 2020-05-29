@@ -8,5 +8,7 @@ export default {
     history: [],
     maxLines: 300,
     command: '',
-    commandPrefix: ''
+    password: null,
+    commandPrefix: '',
+    passwordMode: false
 };

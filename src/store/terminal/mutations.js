@@ -77,4 +77,15 @@ export default {
         }
     },
 
+    [MUTATIONS.SET_PASSWORD_MODE]: function(state, {value}) {
+        state.passwordMode = value;
+        if (!value) {
+            state.password = null;
+        }
+    },
+
+    [MUTATIONS.SUBMIT_COMMAND]: function(state, {command, password}) {
+        state.command = command;
+        state.password = password;
+    }
 };

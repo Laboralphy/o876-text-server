@@ -122,13 +122,13 @@ class Service extends ServiceAbstract {
 
 
         /**
-         * ### REQ_MS_JOIN_CHAN
+         * ### MS_JOIN_CHAN
          * Un client veut rejoindre un cannal, le client ne spécifie que le nom symbolique du canal
          * un coupe circuit intervient pour toute connexion non identifiée
          * @param id {string} id du canal recherché
          * @param ack {function}
          */
-        socket.on(PROTO.REQ_MS_JOIN_CHAN, ({name}, ack) => {
+        socket.on(PROTO.MS_JOIN_CHAN, ({name}) => {
             try {
                 let oChannel = this.txat.searchChannel(name);
                 if (!oChannel) {
@@ -139,7 +139,6 @@ class Service extends ServiceAbstract {
                 }
                 let oTxatUser = this.txat.getUser(client.id);
                 oChannel.addUser(oTxatUser);
-                ack(oChannel.export());
             } catch (e) {
                 console.error(e);
                 socket.disconnect();

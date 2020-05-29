@@ -1,0 +1,1 @@
+export const SET_CONNECTED = 'SET_CONNECTED';

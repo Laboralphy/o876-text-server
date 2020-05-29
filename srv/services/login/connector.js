@@ -3,6 +3,7 @@ import PROTO from './protocol';
 class Connector {
     constructor({socket}) {
         this._socket = socket;
+        this._connectedUsers = new Set();
     }
 
     /**
@@ -17,7 +18,7 @@ class Connector {
      this.nChargeStartTime = this.oGame.getTime();
      mot de passe
      */
-    async req_login(name, pass) {
+    async reqLogin(name, pass) {
         return new Promise(
             resolve => {
                 this._socket.emit(

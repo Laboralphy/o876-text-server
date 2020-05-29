@@ -3,8 +3,9 @@
         <div class="row header"><span class="menu">≡</span><span class="caption">{{ getCurrentScreenCaption }}</span></div>
         <div class="row content">
             <div v-for="l in getCurrentScreenContent">{{ l }}</div>
-            <label>
-                <input ref="commandLine" v-model="inputString" class="command" type="text" @keypress.enter="enterCommand"/>
+            <label ref="commandLine">
+                <input v-if="isPasswordMode" :disabled="!isConnected" type="password" v-model="passwordString" class="command" @keypress.enter="enterPassword"/>
+                <input v-else type="text" :disabled="!isConnected" v-model="inputString" class="command" @keypress.enter="enterCommand"/>
             </label><br ref="lastItem" />
         </div>
     </div>
@@ -15,29 +16,40 @@
     import { createNamespacedHelpers } from 'vuex';
     import * as ACTIONS from '../store/terminal/action_types';
     const { mapGetters: terminalGetters, mapActions: terminalActions } = createNamespacedHelpers('terminal');
+    const { mapGetters: techGetters } = createNamespacedHelpers('tech');
     export default {
         name: "Terminal",
 
         data: function() {
             return {
-                inputString: ''
+                inputString: '',
+                passwordString: ''
             }
         },
 
         computed: {
             ...terminalGetters([
                 'getCurrentScreenContent',
-                'getCurrentScreenCaption'
+                'getCurrentScreenCaption',
+                'isPasswordMode'
+            ]),
+            ...techGetters([
+                'isConnected'
             ])
         },
 
         methods: {
             ...terminalActions({
-                submitCommand: ACTIONS.SUBMIT_COMMAND
+                submitCommand: ACTIONS.SUBMIT_COMMAND,
+                submitPassword: ACTIONS.SUBMIT_PASSWORD
             }),
             enterCommand() {
                 this.submitCommand({command: this.inputString});
                 this.inputString = '';
+            },
+            enterPassword() {
+                this.submitPassword({password: this.passwordString});
+                this.passwordString = '';
             }
         },
 

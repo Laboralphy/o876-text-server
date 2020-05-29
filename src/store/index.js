@@ -1,9 +1,11 @@
 import terminal from './terminal';
-import ws from './plugins/ws';
+import tech from './tech';
+import ws from './plugins/ws-term';
 
 export default {
     modules: {
-        terminal
+        terminal,
+        tech
     },
-    plugins: [ws()]
+    plugins: [ws]
 };
