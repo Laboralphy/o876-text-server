@@ -4,8 +4,8 @@
         <div class="row content">
             <div v-for="l in getCurrentScreenContent">{{ l }}</div>
             <label ref="commandLine">
-                <input v-if="isPasswordMode" :disabled="!isConnected" type="password" v-model="passwordString" class="command" @keypress.enter="enterPassword"/>
-                <input v-else type="text" :disabled="!isConnected" v-model="inputString" class="command" @keypress.enter="enterCommand"/>
+                <input v-if="isPasswordMode" :disabled="!isConnected" type="password" placeholder="***password***" v-model="passwordString" class="command" @keypress.enter="enterPassword"/>
+                <input v-else type="text" :disabled="!isConnected" v-model="inputString" placeholder="command>" class="command" @keypress.enter="enterCommand"/>
             </label><br ref="lastItem" />
         </div>
     </div>
