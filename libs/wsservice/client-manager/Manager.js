@@ -1,4 +1,5 @@
 const Client = require('./Client');
+const Events = require('events');
 
 /**
  * Ce manager maintient une liste de clients et leurs données associées
@@ -6,6 +7,15 @@ const Client = require('./Client');
 class Manager {
 	constructor() {
 		this.clients = {};
+		this._events = new Events();
+	}
+
+	/**
+	 * Renvoie l'instance EventEmitter créé lors de la construction de l'instance
+	 * @return {EventEmitter}
+	 */
+	get events() {
+		return this._events;
 	}
 
 	/**

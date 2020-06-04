@@ -1,14 +1,13 @@
-const Events = require('events');
+const CONSTS = require('./consts');
 
 class Abstract {
 
     constructor() {
         this._clientManager = null;
-        this.events = new Events();
-        ('on one off trigger').split().forEach(m => {
-        	this[m] = (...args) => this.events[m](...args)
-		});
     }
+
+	start() {
+	}
 
 	get clientManager() {
     	return this._clientManager;
@@ -28,7 +27,8 @@ class Abstract {
 	 * Appelée lorsqu"un client se déconnecte du service.
 	 * @param client {Client}
 	 */
-	connectClient(client) {}
+	connectClient(client) {
+	}
 
     /**
      * Renvoie la socket d'un client
@@ -36,7 +36,7 @@ class Abstract {
      * @return {*}
      * @protected
      */
-    _socket(idClient) {
+    getSocket(idClient) {
         return this._clientManager.client(idClient).socket;
     }
 
@@ -47,14 +47,14 @@ class Abstract {
 	 * @param data {*}
 	 * @protected
 	 */
-    _emit(idClient, sEvent, data) {
+    socketEmit(idClient, sEvent, data) {
     	try {
     		if (Array.isArray(idClient)) {
 				idClient.forEach(id => {
-					this._emit(id, sEvent, data);
+					this.socketEmit(id, sEvent, data);
 				});
 			} else {
-				this._socket(idClient).emit(sEvent, data);
+				this.getSocket(idClient).emit(sEvent, data);
 			}
 		} catch (e) {
 			console.error(data);
@@ -64,12 +64,18 @@ class Abstract {
 
     /**
      * Transmet une information à tous les plugins
-     * @param _event {string} nature de l'évènement
+     * @param sEvent {string} nature de l'évènement
      * @param data {*} information supplémentaire
      */
-    _broadcast(_event, data) {
-        this.events.emit('plugin-message', _event, data);
+    serviceBroadcast(sEvent, data) {
+        this.clientManager.events.emit(CONSTS.OPCODE_SERVICE_BROADCAST, sEvent, data);
     }
+
+    addBroadcastListener(sEvent, pHandler) {
+    	this.clientManager.events.on(CONSTS.OPCODE_SERVICE_BROADCAST, (sEvent, data) => {
+    		pHandler(data);
+		});
+	}
 }
 
 module.exports = Abstract;

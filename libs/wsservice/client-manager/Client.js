@@ -4,19 +4,51 @@
 
 class Client {
 	constructor() {
+		this._id = '';
+		this._socket = null;
+		this._status = 0;
+		this._data = {};
 		this.reset();
+	}
+
+	get id() {
+		return this._id;
+	}
+
+
+	set id(value) {
+		this._id = value;
+	}
+
+	get socket() {
+		return this._socket;
+	}
+
+	set socket(value) {
+		this._socket = value;
+	}
+
+	get status() {
+		return this._status;
+	}
+
+	set status(value) {
+		this._status = value
+	}
+
+	get data() {
+		return this._data;
 	}
 
 	/**
 	 * Remise à zéro des données d'un client
 	 */
 	reset() {
-		this.id = '';
-		this.idStorage = 0;
-		this.name = '';
-		this.socket = null;
-		this.status = 0;
-		this.connectionAttempts = 3;
+		this._id = '';
+		this._name = '';
+		this._socket = null;
+		this._status = 0;
+		this._data = {};
 	}
 
 	/**

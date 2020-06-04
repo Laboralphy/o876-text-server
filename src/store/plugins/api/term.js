@@ -1,7 +1,7 @@
 import * as TERMINAL_MUTATIONS from "../../terminal/mutation_types";
 
 /**
- * Uses in plugin to easily access to mutations
+ * Uses in service to easily access to mutations
  * @param store
  * @returns {{print, select, readonly screens: array, passwordMode, readonly currentScreenId: string, clear, create, destroy}}
  */

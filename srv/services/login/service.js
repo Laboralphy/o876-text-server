@@ -1,6 +1,6 @@
 const ServiceAbstract = require('../../../libs/wsservice/service-manager/ServiceAbstract');
 const logger = require('../../../libs/logger');
-const STATUS = require('../../consts/status');
+const STATUS = require('./consts/status');
 const PROTO = require('./protocol');
 
 class ServiceLogin extends ServiceAbstract {
@@ -17,6 +17,12 @@ class ServiceLogin extends ServiceAbstract {
         super.connectClient(client);
         let socket = client.socket;
 
+        client.data.login = {
+            name: '',
+            status: STATUS.UNIDENTIFIED,
+            connectionAttempts: 3
+        };
+
         /**
          * ### REQ_LOGIN
          * Un client souhaite s'identifier après s'etre connecté.
@@ -29,33 +35,33 @@ class ServiceLogin extends ServiceAbstract {
          */
         socket.on(PROTO.REQ_LOGIN, ({name, pass}, ack) => {
             // clinet déja en cours d'indentification -> dehors
-            if (client.status === STATUS.CONNECTING) {
+            if (client.data.login.status === STATUS.CONNECTING) {
                 socket.disconnect();
             }
             logger.logfmt('Incoming new user %s', name);
             // si le client est déja identifié...
-            if (client.status === STATUS.IDENTIFIED) {
+            if (client.data.login.status === STATUS.IDENTIFIED) {
                 ack({id: client.id});
                 return;
             }
-            client.status = STATUS.CONNECTING;
-            client.name = name;
+            client.data.login.status = STATUS.CONNECTING;
+            client.data.login.name = name;
             client.id = socket.client.id;
             if (name !== pass) {
                 logger.logfmt(name , pass, name !== pass);
-                logger.logfmt('user %s (%s) access denied. %d attempt(s) left.', client.id, client.name, --client.connectionAttempts);
-                if (client.connectionAttempts <= 0) {
+                logger.logfmt('user %s (%s) access denied. %d attempt(s) left.', client.id, client.data.login.name, --client.data.login.connectionAttempts);
+                if (client.data.login.connectionAttempts <= 0) {
                     ack({id: null});
                     socket.disconnect();
                 } else {
                     logger.logfmt('wrong user/pass');
-                    client.status = STATUS.UNIDENTIFIED;
+                    client.data.login.status = STATUS.UNIDENTIFIED;
                     ack({id: null});
                 }
             } else {
-                logger.logfmt('user %s (%s) access granted', client.id, client.name);
-                this._broadcast('client-login', {client});
-                client.status = STATUS.IDENTIFIED;
+                logger.logfmt('user %s (%s) access granted', client.id, client.data.login.name);
+                this.serviceBroadcast('client-login', {client});
+                client.data.login.status = STATUS.IDENTIFIED;
                 ack({id: client.id});
             }
         });

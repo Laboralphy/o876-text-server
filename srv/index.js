@@ -27,7 +27,9 @@ function initRoutes() {
 
 function runService() {
     initRoutes();
+    console.log('will add login service')
     wss.service(new ServiceLogin());
+    console.log('will add chat service')
     wss.service(new ServiceChat());
     // wss.service(new ServiceCommand());
     return wss.listen(8080);

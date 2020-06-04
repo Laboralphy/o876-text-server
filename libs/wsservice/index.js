@@ -17,7 +17,7 @@ class MPService {
 	}
 
 	service(oService) {
-		this._serviceManager.plugin(oService);
+		this._serviceManager.service(oService);
 	}
 
 	get express() {

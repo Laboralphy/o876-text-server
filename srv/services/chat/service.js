@@ -5,9 +5,7 @@ const PROTO = require('./protocol');
 
 class Service extends ServiceAbstract {
 
-
-    constructor() {
-        super();
+    init() {
         this.txat = new TinyTxat.System();
         this.txat.on('user-joins', ({to, user, channel}) => {
             to === user ? this.send_ms_you_join(to, channel) : this.send_ms_user_joins(to, user, channel)
@@ -28,10 +26,10 @@ class Service extends ServiceAbstract {
         c.type = 'permanent';
         this.txat.addChannel(c);
 
-
-        this.events.on('client-login', ({client}) => {
+        console.log('adding listener');
+        this.addBroadcastListener('client-login', ({client}) => {
             // ajouter le client au canal public
-            let oTxatUser = new TinyTxat.User(client); // {id, name}
+            let oTxatUser = new TinyTxat.User({id: client.id, name: client.data.login.name}); // {id, name}
             this.txat.addUser(oTxatUser);
             let oChannel = this.txat.getChannel(2);
             oChannel.addUser(oTxatUser);
@@ -195,7 +193,7 @@ class Service extends ServiceAbstract {
      */
     send_ms_you_join(client, channel) {
         let oChannel = this.txat.getChannel(channel);
-        this._emit(client, PROTO.MS_YOU_JOIN, oChannel.export());
+        this.socketEmit(client, PROTO.MS_YOU_JOIN, oChannel.export());
     }
 
     /**
@@ -209,7 +207,7 @@ class Service extends ServiceAbstract {
         let oArriving = this.txat.getUser(user);
         if (oChannel.userPresent(oArriving)) {
             // le client appartient au canal
-            this._emit(client, PROTO.MS_USER_JOINS, {user: oArriving.id, channel: oChannel.id});
+            this.socketEmit(client, PROTO.MS_USER_JOINS, {user: oArriving.id, channel: oChannel.id});
         }
     }
 
@@ -221,9 +219,9 @@ class Service extends ServiceAbstract {
      */
     send_ms_user_leaves(client, user, channel) {
         if (client === user) {
-            this._emit(client, PROTO.MS_YOU_LEAVE, {channel});
+            this.socketEmit(client, PROTO.MS_YOU_LEAVE, {channel});
         } else {
-            this._emit(client, PROTO.MS_USER_LEAVES, {user, channel});
+            this.socketEmit(client, PROTO.MS_USER_LEAVES, {user, channel});
         }
     }
 
@@ -235,7 +233,7 @@ class Service extends ServiceAbstract {
      * @param message {string} contenu du message
      */
     send_ms_user_says(client, user, channel, message) {
-        this._emit(client, PROTO.MS_USER_SAYS, {user, channel, message});
+        this.socketEmit(client, PROTO.MS_USER_SAYS, {user, channel, message});
     }
 }
 

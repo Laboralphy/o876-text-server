@@ -1,31 +1,23 @@
+const CONSTS = require('./consts');
 const ClientManager = require('../client-manager');
 
 class ServiceManager {
     constructor() {
         this.clientManager = new ClientManager();
-        this._plugins = [];
+        this._services = [];
     }
 
     /**
-     * Ajoute un plgin à la liste des plugin de service
+     * Ajoute un plgin à la liste des service de service
      * @param instance {string|object}
      * @returns {*}
      */
-    plugin(instance) {
-        if (typeof instance === 'string') {
-            let pClass = require('./' + instance);
-            let oInstance = new pClass();
-            return this.plugin(oInstance);
-        }
+    service(instance) {
         instance.clientManager = this.clientManager;
-        instance.events.on('plugin-message',
-            (_event, data) => {
-                this._plugins.forEach(p => {
-                    p.events.emit(_event, data);
-                });
-            }
-        );
-        this._plugins.push(instance);
+        this._services.push(instance);
+        if ('init' in instance) {
+            instance.init();
+        }
         return this;
     }
 
@@ -35,7 +27,7 @@ class ServiceManager {
      */
     destroyClient(client) {
         let id = client.id;
-        this._plugins.forEach(p => p.disconnectClient(client));
+        this._services.forEach(p => p.disconnectClient(client));
         this.clientManager.unregisterClient(id);
         client.id = null;
     }
@@ -55,7 +47,7 @@ class ServiceManager {
             this.destroyClient(client);
         });
 
-        this._plugins.forEach(p => p.connectClient(client));
+        this._services.forEach(p => p.connectClient(client));
     }
 }
 
